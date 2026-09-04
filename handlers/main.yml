@@ -1,2 +1,14 @@
 ---
 # handlers file for serverdns
+# BIND9 handler
+- name: Enable named
+  ansible.builtin.service:
+    name: named
+    enabled: true
+- name: Start named
+  ansible.builtin.service:
+    name: named
+    state: "started"
+- name: Reload named
+  ansible.builtin.command: rndc reload
+  changed_when: true

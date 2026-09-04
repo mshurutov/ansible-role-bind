@@ -1,77 +1,115 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 ---
 # defaults file for serverdns
 serverdns_files_dir: "{{ role_path }}/files"
 serverdns_templates_dir: "{{ role_path }}/templates"
 serverdns_vars_dir: "{{ role_path }}/vars"
 serverdns_software: "bind9"
+serverdns_service: "named"
 serverdns_packages: []
+#  - "bind"
+# Defaults for zones
+dns_default_zone_ttl: "1W"
+dns_default_zone_refresh: "86400"
+dns_default_zone_update_retry: "7200"
+dns_default_zone_expiry: "604800"
+dns_default_zone_minimum: "86400"
 # - bind9
 bind9_config_dir:
-# "/etc/bind"
+# - path: "/etc/bind"
+bind9_config_dirs:
+# - path: "/var/bind/pri"
+#   link: "/etc/bind/pri"
+#   relative: true
+# - path: "/var/bind/dyn"
+#   link: "/etc/bind/dyn"
+#   relative: true
+# - path: "/var/bind/sec"
+#   link: "/etc/bind/sec"
+#   relative: true
 bind9_config_file: "{{ bind9_config_dir }}/named.conf"
 bind9_cache_data: "/var/bind/named.cache"
 # BIND9 config blocks
-bind9_config_acl: {}
-#  - name: deny
-#    values:
-#      - none
-#  - name: allow
-#    values:
-#      - "127.0.0.0/8"
-#      - "10.0.0.0/8"
-#      - "100.64.0.0/10"
-#      - "169.254.0.0/16"
-#      - "172.16.0.0/12"
-#      - "192.168.0.0/16"
-#      - "::1/128"
-bind9_config_controls: {}
-bind9_config_dnssec_policy: {}
-bind9_config_includes: {}
-bind9_config_key: {}
-bind9_config_key_store: {}
-bind9_config_logging: {}
-bind9_config_masters: {}
-bind9_config_options: {}
-bind9_config_parental_agents: {}
-bind9_config_primaries: {}
-bind9_config_server: {}
-bind9_config_statistics_channels: {}
-bind9_config_tls: {}
-bind9_config_http: {}
-bind9_config_trust_anchors: {}
-bind9_config_managed_keys: {}
-bind9_config_trusted_keys: {}
-bind9_config_view: {}
-bind9_config_zones: {}
+bind9_config_default: {}
 #  acl:
-#    set:
-#      - name1:
-#          - add1
-#          - addr2
-#          ...
-#          - addrN
-#  controls:
-#    include: "/etc/bind/rndc.key"
-#    set:
-#      - listen: "127.0.0.1"
-#        port: 953
-#        allow:
-#          - "127.0.0.1/32"
+#    options:
+#      - name: deny
+#        values:
+#          - none
+#      - name: allow
+#        values:
+#          - "127.0.0.0/8"
+#          - "10.0.0.0/8"
+#          - "100.64.0.0/10"
+#          - "169.254.0.0/16"
+#          - "172.16.0.0/12"
+#          - "192.168.0.0/16"
 #          - "::1/128"
-#        keys: "rndc-key"
-#  config_path:
-bind9_zones_default:
-  - name: "."
-    options:
-      type: "hint"
-      file: "{{ bind9_cache_data }}"
-  - name: "localhost"
-    options:
-      type: "master"
-      file: "pri/localhost.zone"
-      notify: "no"
-  - name: "127.in-addr.arpa"
-    options:
-      type: "master"
-      file: "pri/127.zone"
-      notify: "no"
+#  controls: {}
+#  dnssec_policy: {}
+#  includes: {}
+#  key:
+#    include: "{{ bind9_config_dir }}/rndc.key"
+#  key_store: {}
+#  logging: {}
+#  masters: {}
+#  options: {}
+#  parental_agents: {}
+#  server: {}
+#  statistics_channels: {}
+#  tls: {}
+#  http: {}
+#  trust_anchors: {}
+#  view: {}
+serverdns_zones: []
+#    - name: "."
+#      options:
+#        type: "hint"
+#        file: "{{ bind9_cache_data }}"
+#    - name: "localhost"
+#      options:
+#        type: "master"
+#        file: "pri/localhost.zone"
+#        notify: "no"
+#    - name: "127.in-addr.arpa"
+#      options:
+#        type: "master"
+#        file: "pri/127.zone"
+#        notify: "no"
+#    - name: &name "example.com"
+#      options:
+#        type: "master"
+#        file: "pri/example.com.zone"
+#        notify: "yes"
+#        zone_ttl:
+#        zone_origin:
+#        primary_ns: "ns.example.com."
+#        owner: "sysoper"
+#      zone_ttl: {{ default_zone_ttl }}
+#      primary_ns: "ns"
+#      zonemaster: "admin." + &name + "."
+#      refresh: {{ dns_default_zone_refresh }}
+#      update_retry: {{ dns_default_zone_update_retry }}
+#      expiry: {{ dns_default_zone_expiry }}
+#      minimum: {{ dns_default_zone_minimum }}
+#      records:
+#        - point: "ns"
+#          type: "NS"
+#          source: "ns1"
+#        - type: "NS"
+#          source: "ns2"
+#        - point: "mail"
+#          type: "MX"
+#          source: "192.168.1.3"
+#        - point: "ns1"
+#          type: "A"
+#          source: "192.168.1.3"
+#        - point: "ns2"
+#          type: "A"
+#          source: "192.168.1.4"
+#        - point: "dsc1"
+#          type: "A"
+#          source: "192.168.1.5"
+#        - point: "dsc2"
+#          type: "A"
+#          source: "192.168.1.6"

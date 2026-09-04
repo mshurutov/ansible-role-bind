@@ -1,16 +1,77 @@
+# SPDX-License-Identifier: GPL-2.0-or-later
 ---
-- name: Check if config dirs exist
-  ansible.builtin.file:
-    path: "{{ item.path }}"
-    owner: "{{ item.owner | default('root') }}"
-    group: "{{ item.group | default('named') }}"
-    mode: "{{ item.mode }}"
-  loop: "{{ bind9_config_dirs }}"
-  
-- name: Copy config
+- name: Check if config dirs and symlinks exist
+  tags: bind9,dns_config,bind9_config,bind9_config_dirs
+  block:
+    - name: Check if config dirs exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: "{{ item.owner | default('root') }}"
+        group: "{{ item.group | default('named') }}"
+        mode: "{{ item.mode | default('0755')}}"
+        state: "directory"
+      loop: "{{ bind9_config_dir + bind9_config_dirs | default([]) }}"
+    - name: Check if symlinks exist
+      ansible.builtin.file:
+        path: "{{ item.link }}"
+        src: "{% if item.relative %}../..{% endif %}{{ item.path }}"
+        owner: "root"
+        group: "root"
+        mode: "0777"
+        state: "link"
+      loop: "{{ bind9_config_dirs | default([]) }}"
+
+- name: Build dict of hashes for master zones
+  when: dns_zone.options.type == "master"
+  tags: bind9,dns_config,bind9_config,bind9_config_zone
+  block:
+    - name: Read zone hashes
+      ansible.builtin.shell: grep -s "^; Hash:" {{ bind9_config_dir }}/{{ dns_zone.options.file }} || true
+      changed_when: false
+      check_mode: false
+      loop: "{{ serverdns_zones | default([]) }}"
+      loop_control:
+        loop_var: "dns_zone"
+        label: "dns_zone.name"
+      register: zone_hashes_raw
+    - name: Create dict of hashes
+      ansible.builtin.set_fact:
+        zone_hashes: "{{ zone_hashes | default([]) + [{'hash': _zone.stdout | default(), 'name': _zone.dns_zone.name}] }}"
+      loop: "{{ zone_hashes_raw.results | default([]) }}"
+      loop_control:
+        loop_var: "_zone"
+        label: "_zone.name"
+
+- name: Configure BIND9
   become: true
   become_user: root
-  ansible.builtin.template:
-    dest: "{{ serverdns_config_file }}"
-    src: "{{ serverdns_templates_dir }}/bind9-named.conf.j2"
-    mode: "0644"
+  notify: Reload named
+  tags: bind9,dns_config,bind9_config
+  block:
+    - name: Copy include configs
+      when: item.value.include is defined and item.value.include | length > 0
+      tags: bind9_config_file
+      ansible.builtin.template:
+        dest: "{{ item.value.include }}"
+        src: "{{ serverdns_templates_dir }}/bind9/{{ item.key }}.conf.j2"
+        mode: "0644"
+        validate: /usr/bin/named-checkconf
+      loop: "{{ bind9_config | dict2items }}"
+    - name: Copy config
+      tags: bind9_config_file
+      ansible.builtin.template:
+        dest: "{{ bind9_config_file }}"
+        src: "{{ serverdns_templates_dir }}/bind9-named.conf.j2"
+        mode: "0644"
+        validate: /usr/bin/named-checkconf
+    - name: Edit zone file
+      when: dns_zone.options.type == "master"
+      tags: bind9_config_zone
+      ansible.builtin.template:
+        dest: "{{ bind9_config_dir }}/{{ dns_zone.options.file }}"
+        src: "{{ serverdns_templates_dir }}/bind9-zone.j2"
+        mode: "0644"
+        validate: /usr/bin/named-checkzone {{ dns_zone.name }} %s
+      loop: serverdns_zones
+      loop_control:
+        loop_var: "dns_zone"

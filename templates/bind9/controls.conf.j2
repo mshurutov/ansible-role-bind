@@ -1,0 +1,9 @@
+/* BIND9 controls config */
+controls {
+{% for ctrl in bind9_config.controls %}
+	inet {{ ctrl.addr }}{% if ctrl.port is defined -%}
+	port {{ ctrl.port }}{%- endif %} allow { {{ ctrl.allow }} }{% if ctrl.keys is defined -%}
+	keys { {{ ctrl.keys }} }{% endif -%}
+	{% if ctrl.read-only is defined -%} read-only {{ ctrl.read-only }}{%- endif %};
+{% endfor %}
+}

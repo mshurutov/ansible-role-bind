@@ -1,0 +1,44 @@
+{# SPDX-License-Identifier: GPL-2.0-or-later #}
+{# BIND9 zone config template #}
+{% set _zone_data = {} %}
+{% set _ = _zone_data.update({'zone_ttl': dns_zone.zone_ttl | default('default_zone_ttl') }) %}
+{% set _ = _zone_data.update({'name': dns_zone.name }) %}
+{% set _ = _zone_data.update({'primary_ns': dns_zone.primary_ns }) %}
+{% set _ = _zone_data.update({'zonemaster': dns_zone.zonemaster }) %}
+{% set _ = _zone_data.update({'refresh': dns_zone.refresh | default('default_refresh') }) %}
+{% set _ = _zone_data.update({'update_retry': dns_zone.update_retry | default('default_update_retry') }) %}
+{% set _ = _zone_data.update({'expiry': dns_zone.expiry | default('default_expiry') }) %}
+{% set _ = _zone_data.update({'minimum': dns_zone.minimum | default('default_minimum') }) %}
+{% set _ = _zone_data.update({'records': dns_zone.records | default([]) }) %}
+{% set _zone = {'hash': _zone_data | string | hash('sha256')} %}
+{% for _hash in zone_hashes if _hash.name == dns_zone.name %}
+{%   set _hash_serial = _hash.hash.split(' ')[2:] %}
+{%   if _hash_serial and _hash_serial[0] == _zone.hash %}
+{%     set _ = _zone.update({'serial': _hash_serial[1]}) %}
+{%   else %}
+{%     set cur_date_part = ansible_date_time.year | string + ansible_date_time.month | string + ansible_date_time.day | string %}
+{%     set _date_part = _hash_serial.1[:8] %}
+{%     set _number_part = _hash_serial.1[-2:] %}
+{%     if cur_date_part == _date_part %}
+{%       set _ = _zone.update({'serial': _date_part | string + str.(_number_part | int + 1).zfill(2)}) %}
+{%     else %}
+{%       set _ = _zone.update({'serial': cur_date_part | string + "01"}) %}
+{%     endif%}
+{%   endif%}
+{% endfor %}
+; zone {{ dns_zone.name }} config is managed by ansible
+; Do not edit it manually!
+; Hash:  {{ _zone.hash }} {{ _zone.serial }}
+$TTL {{ dns_zone.zone_ttl | default('dns_default_zone_ttl') }}    ; default TTL for zone
+$ORIGIN {{ dns_zone.name }}    ; base domain-name
+; Start of Authority RR defining the key characteristics of the zone (domain)
+@	IN	SOA	{{ dns_zone.primary_ns }} {{ dns_zone.zonemaster }} (
+	{{ _zone.serial }}	; serial number
+	{{ dns_zone.refresh | default('dns_default_zone_refresh') }}			; refresh
+	{{ dns_zone.update_retry | default('dns_default_zone_update_retry') }}			; update retry
+	{{ dns_zone.expiry | default('dns_default_zone_expiry') }}			; expiry
+	{{ dns_zone.minimum | default('dns_default_zone_minimum') }}			; minimum
+)
+{% for rr in dns_zone.records | default([]) %}
+{{ rr.point | default('	') }}	{{ rr.ttl | default('	') }}	{{ rr.class | default('IN') }} {{ rr.type }}	{{ rr.source }}
+{% endfor %}

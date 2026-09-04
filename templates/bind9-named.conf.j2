@@ -1,4 +1,4 @@
-/* BIND9 DNS server config is managed by ansible
+/* BIND9 DNS server config file is managed by ansible
  * Don't edit it manually
  *
  * Refer to the named.conf(5) and named(8) man pages, and the documentation
@@ -13,174 +13,152 @@
  * useless Internet traffic.
  */
 
-{# include "filename"; #}
-{% if bind9_config_includes is defined and bind9_config_includes | length > 0 %}
-{% for include_file in bind9_config_includes %}
-include "{{ include_file }}";
-{% endfor %}
+{# ACL: defines a named IP address matching list, for access control and other uses. #}
+{% if bind9_config.acl is defined and bind9_config.acl | length > 0 %}
+{% if bind9_config.acl.include is defined and bind9_config.acl.include | length > 0 %}
+include "{{ bind9_config.acl.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/acl.conf.j2" %}
 {% endif %}
 
-{# Defines a named IP address matching list, for access control and other uses. #}
-{% if bind9_config_acl is defined and bind9_config_acl | length > 0 %}
-{% for acl in bind9_config_acl %}
-acl "{{ acl.name }}" {
-{% if acl.comment is defined and acl.comment | length > 0 %}
-	{{ acl.comment }}
 {% endif %}
-{% for netcode in acl.values %}
-	{{ netcode }};
+{# key: Specifies key information for use in authentication and authorization using TSIG. #}
+{% if bind9_config.key is defined and bind9_config.key | length > 0 %}
+{% if bind9_config.key.include is defined and bind9_config.key.include | length > 0 %}
+include "{{ bind9_config.key.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/key.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# controls: Declares control channels to be used by the rndc utility. #}
+{% if bind9_config.controls is defined and bind9_config.controls | length > 0 %}
+{% if bind9_config.controls.include is defined and bind9_config.controls.include | length > 0 %}
+include "{{ bind9_config.controls.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/controls.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# dnssec-policy: Describes a DNSSEC key and signing policy for zones.
+   See dnssec-policy for details. #}
+{% if bind9_config.dnssec_policy is defined and bind9_config.dnssec_policy | length > 0 %}
+{% if bind9_config.dnssec_policy.include is defined and bind9_config.dnssec_policy.include | length > 0 %}
+include "{{ bind9_config.dnssec_policy.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/dnssec_policy.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# logging: Specifies what information the server logs and where the log messages are sent. #}
+{% if bind9_config.logging is defined and bind9_config.logging | length > 0 %}
+{% if bind9_config.logging.include is defined and bind9_config.logging.include | length > 0 %}
+include "{{ bind9_config.logging.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/logging.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# masters: 
+   primaries: Defines a named list of servers for inclusion in stub and
+              secondary zones' primaries or also-notify lists.
+			  (Note: this is a synonym for the original keyword masters,
+			  which can still be used, but is no longer the
+			  preferred terminology.) #}
+{% if (bind9_config.masters is defined and bind9_config.masters | length > 0) %}
+{% if bind9_config.masters.include is defined and bind9_config.masters.include | length > 0 %}
+include "{{ bind9_config.masters.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/masters.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# options: Controls global server configuration options and
+   sets defaults for other statements. #}
+{% if bind9_config.options is defined and bind9_config.options | length > 0 %}
+{% if bind9_config.options.include is defined and bind9_config.options.include | length > 0 %}
+include "{{ bind9_config.options.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/options.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# parental-agents: Defines a named list of servers for inclusion in primary
+   and secondary zones' parental-agents lists. #}
+{% if bind9_config.parental_agents is defined and bind9_config.parental_agents | length > 0 %}
+{% if bind9_config.parental_agents.include is defined and bind9_config.parental_agents.include | length > 0 %}
+include "{{ bind9_config.parental_agents.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/parental_agents.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# server: Sets certain configuration options on a per-server basis. #}
+{% if bind9_config.server is defined and bind9_config.server | length > 0 %}
+{% if bind9_config.server.include is defined and bind9_config.server.include | length > 0 %}
+include "{{ bind9_config.server.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/server.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# statistics-channels: Declares communication channels to get access to named statistics. #}
+{% if bind9_config.statistics_channels is defined
+   and bind9_config.statistics_channels | length > 0 %}
+{% if bind9_config.statistics_channels.include is defined
+   and bind9_config.statistics_channels.include | length > 0 %}
+include "{{ bind9_config.statistics_channels.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/statistics_channels.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# tls: Specifies configuration information for a TLS connection, including a key-file,
+        cert-file, ca-file, dhparam-file, remote-hostname, ciphers, protocols,
+		prefer-server-ciphers, and session-tickets. #}
+{% if bind9_config.tls is defined and bind9_config.tls | length > 0 %}
+{% if bind9_config.tls.include is defined and bind9_config.tls.include | length > 0 %}
+include "{{ bind9_config.tls.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/tls.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# http: Specifies configuration information for an HTTP connection,
+   including endpoints, listener-clients, and streams-per-connection. #}
+{% if bind9_config.http is defined and bind9_config.http | length > 0 %}
+{% if bind9_config.http.include is defined and bind9_config.http.include | length > 0 %}
+include "{{ bind9_config.http.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/http.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# trust-anchors: Defines DNSSEC trust anchors: if used with the initial-key
+   or initial-ds keyword, trust anchors are kept up-to-date using RFC 5011
+   trust anchor maintenance; if used with static-key or static-ds, keys are permanent. #}
+{% if bind9_config.trust_anchors is defined and bind9_config.trust_anchors | length > 0 %}
+{% if bind9_config.trust_anchors.include is defined and bind9_config.trust_anchors.include | length > 0 %}
+include "{{ bind9_config.trust_anchors.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/trust_anchors.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# view: Defines a view. #}
+{% if bind9_config.view is defined and bind9_config.view | length > 0 %}
+{% if bind9_config.view.include is defined and bind9_config.view.include | length > 0 %}
+include "{{ bind9_config.view.include }}";
+{% else %}
+{% include "{{ serverdns_templates_dir }}/bind9/view.conf.j2" %}
+{% endif %}
+
+{% endif %}
+{# zone: Defines a zone. #}
+{% for zone in serverdns_zones %}
+zone "{{ zone.name }}" {
+{% for opt_name,opt_value in zone.options %}
+	{{ opt_name }} {{ opt_value }}
 {% endfor %}
 }
 {% endfor %}
-{% endif %}
-
-{# Declares control channels to be used by the rndc utility. #}
-{% if bind9_config_controls is defined and bind9_config_controls | length > 0 %}
-controls {
-{% for ctrl in bind9_config_controls %}
-	inet ctrl.addr{% if ctrl.port is defined -%}
-	port {{ ctrl.port }}{%- endif %} allow { {{ ctrl.allow }} }{% if ctrl.keys is defined -%}
-	keys { {{ ctrl.keys }} }{% endif -%}
-	{% if ctrl.read-only is defined -%} read-only {{ ctrl.read-only }}{%- endif %};
-{% endfor %}
-}
-{% endif %}
-
-{# Describes a DNSSEC key and signing policy for zones. See dnssec-policy for details. #}
-{% if bind9_config_dnssec_policy is defined and bind9_config_dnssec_policy | length > 0 %}
-{% for dnspolicy in bind9_config_dnssec_policy %}
-dnssec-policy "{{ dnspolicy.name }}" {
-{% for  in %}
-{% endfor %}
-}
-{% endfor %}
-{% endif %}
-
-{# Specifies key information for use in authentication and authorization using TSIG. #}
-{% if bind9_config_key is defined and bind9_config_key | length > 0 %}
-{% for dnskey in bind9_config_key %}
-key "{{ dnskey.name }}" {
-{% for  in %}
-	algorithm "{{ dnskey.algorithm }}";
-	secret "{{ dnskey.secret }}";
-{% endfor %}
-}
-{% endfor %}
-{% endif %}
-
-{% if bind9_config_key_store is defined and bind9_config_key_store | length > 0 %}
- {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-{% if bind9_config_logging is defined and bind9_config_logging | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-{% if (bind9_config_masters is defined and bind9_config_masters | length > 0) or 
-      (bind9_config_primaries is defined and bind9_config_primaries | length > 0) %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_options: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_parental_agents: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_server: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_statistics_channels: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_tls: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_http: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_trust_anchors: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_managed_keys: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_trusted_keys: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_view: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-bind9_config_zones: {}
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}
-
-{% if  is defined and | length > 0 %}
-  {
-{% for  in %}
-{% endfor %}
-}
-{% endif %}

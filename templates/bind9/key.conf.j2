@@ -1,0 +1,9 @@
+/* BIND9 key config */
+{% for dnskey in bind9_config.key | default({}) %}
+key "{{ dnskey.name }}" {
+{% for  in %}
+	algorithm "{{ dnskey.algorithm }}";
+	secret "{{ dnskey.secret }}";
+{% endfor %}
+}
+{% endfor %}
